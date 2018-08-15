@@ -1,0 +1,14 @@
+# executables
+/target
+
+# rustfmt backup files
+**/*.rs.bk
+
+# swap files
+**/*.swp
+
+# tests
+/tests
+
+/target
+**/*.rs.bk
