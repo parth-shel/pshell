@@ -57,6 +57,9 @@ fn main() {
 				/* parse input line and divide into tokens */
 
 				let tokens: Vec<String> = parser::tokenize_input(line);
+				if tokens.is_empty() {
+					continue;
+				}
 				// DEBUG
 				println!("TOKENS:");
 				for x in &tokens {
@@ -66,6 +69,9 @@ fn main() {
 				/* parse input and build command table */
 
 				let cmd_table: pshell::Command = parser::parse_input(tokens);
+				if cmd_table.simple_commands.is_empty() {
+					continue;
+				}
 				// DEBUG
 				println!("COMMAND TABLE:");
 				println!("Simple Commands:");
