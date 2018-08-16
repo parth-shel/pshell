@@ -5,11 +5,14 @@
  **/
 
 extern crate libc;
+extern crate rustyline;
 extern crate hostname;
 
 use std::io;
 use std::io::Write;
 use std::env;
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
 mod pshell;
 mod lex;
@@ -17,6 +20,10 @@ mod lex;
 fn main() {
 	/* print shell startup message */
 	println!("Hello, World!");
+
+	/* RustyLine line editor */
+	let mut rl = Editor::<()>::new();
+	rl.load_history(".pshell_history");
 
 	/* continually prompt the user, read input and execute command(s) */
 	loop {
@@ -29,32 +36,46 @@ fn main() {
 
 		/* read input */
 
-		let mut input = String::new();
-		io::stdin().read_line(&mut input)
-			.expect("failed to read line");
+		let readline = rl.readline("");
+		match readline {
+			Ok(line) => {
+				/* if line is empty, move to the next input line */
+				if line.len() == 0 {
+					continue;
+				}
 
-		/* exit gracefully on end-of-file */
-		if input.len() == 0 {
-			break;
+			 	/* add input to history */
+
+				rl.add_history_entry(line.as_ref());
+
+				/* parse input line and divide into tokens */
+
+				let tokens: Vec<String> = lex::parse(line);
+
+				/* parse input and build command table */
+
+				let cmd_table: pshell::Command = pshell::parse(tokens);
+
+				/* execute command(s) */
+
+				pshell::exec(cmd_table);
+			}
+			/* ctrl-C */
+			Err(ReadlineError::Interrupted) => {
+				// continue;
+				break;
+			},
+			/* exit gracefully on end-of-file */
+			Err(ReadlineError::Eof) => {
+				break;
+			},
+			Err(err) => {
+				println!("pshell read line error: {:?}", err);
+				break;
+			}
 		}
-
-		/* if line contains only NEWLINE, go to next input line */
-		if input.len() <= 1 {
-			continue;
-		}
-
-		/* parse input line and divide into tokens */
-
-		let tokens: Vec<String> = lex::parse(input);
-
-		/* parse input and build command table */
-
-		let cmd_table: pshell::Command = pshell::parse(tokens);
-
-		/* execute command(s) */
-
-		pshell::exec(cmd_table);
 	}
+	rl.save_history(".pshell_history").unwrap();
 }
 
 fn print_prompt() {
@@ -73,19 +94,17 @@ fn print_prompt() {
 	let mut user_name = String::new();
 	match env::var("USER") {
 		Ok(val) => user_name = String::from(val),
-		Err(err) => panic!("couldn't get env var! {}", err),
+			Err(err) => panic!("couldn't get env var! {}", err),
 	}
 
 	let mut host_name = hostname::get_hostname().unwrap();
 
 	let curr_dir = env::current_dir().unwrap();
-	
-	print!("{}[{};{}m{}{}[{}m", esc, bright, green, user_name, esc, reset);
-	print!("@");
-	print!("{}[{};{}m{}{}[{}m", esc, bright, blue, host_name, esc, reset);
-	print!("{}[{};{}m|{}[{}m", esc, bright, red, esc, reset);
-	print!("{}[{};{}m{}{}[{}m ", esc, bright, yellow, curr_dir.display(), esc, reset);
-	print!("{}[{};{}m $pshell> {}[{}m", esc, bright, cyan, esc, reset);
 
-	io::stdout().flush().unwrap();
+	println!("{}[{};{}m{}{}[{}m@{}[{};{}m{}{}[{}m{}[{};{}m | {}[{}m{}[{};{}m{}{}[{}m{}[{};{}m $pshell ↴ {}[{}m",
+			esc, bright, green, user_name, esc, reset,
+			esc, bright, blue, host_name,esc, reset,
+			esc, bright, red, esc, reset,
+			esc, bright, yellow, curr_dir.display(), esc, reset,
+			esc, bright, cyan, esc, reset);
 }
