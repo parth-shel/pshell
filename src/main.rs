@@ -58,6 +58,7 @@ fn main() {
 
 				let tokens: Vec<String> = parser::tokenize_input(line);
 				// DEBUG
+				println!("TOKENS:");
 				for x in &tokens {
 					println!("{}", x);
 				}
@@ -65,6 +66,20 @@ fn main() {
 				/* parse input and build command table */
 
 				let cmd_table: pshell::Command = parser::parse_input(tokens);
+				// DEBUG
+				println!("COMMAND TABLE:");
+				println!("Simple Commands:");
+				for _sc in &cmd_table.simple_commands {
+					println!("Arguments:");
+					for _arg in &_sc.args {
+						println!("{}", _arg);
+					}	
+				}
+				println!("Input File: {}", cmd_table.in_file);
+				println!("Output File: {}", cmd_table.out_file);
+				println!("Error File: {}", cmd_table.err_file);
+				println!("Append: {:?}", cmd_table.append);
+				println!("Background: {:?}", cmd_table.background);
 
 				/* execute command(s) */
 

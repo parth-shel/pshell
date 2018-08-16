@@ -1,21 +1,21 @@
 pub struct Command {
 	pub simple_commands: Vec<SimpleCommand>,
-	pub out_file: String,
 	pub in_file: String,
+	pub out_file: String,
 	pub err_file: String,
-	background: bool,
-	append: bool,
+	pub append: bool,
+	pub background: bool,
 }
 
 impl Command {
 	pub fn new() -> Command {
 		Command {
 			simple_commands: Vec::new(),
-			out_file: String::new(),
 			in_file: String::new(),
+			out_file: String::new(),
 			err_file: String::new(),
-			background: false,
 			append: false,
+			background: false,
 		}
 	}
 }
