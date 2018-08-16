@@ -1,12 +1,3 @@
-pub fn parse(tokens: Vec<String>) -> Command {
-	let mut cmd_table:Command = Command::new();
-	return cmd_table;
-}
-
-pub fn exec(cmd_table: Command) {
-	return;
-}
-
 pub struct Command {
 	pub simple_commands: Vec<SimpleCommand>,
 	pub out_file: String,
@@ -39,4 +30,8 @@ impl SimpleCommand {
 			args: Vec::new(),
 		}
 	}
+}
+
+pub fn exec(cmd_table: Command) {
+	return;
 }

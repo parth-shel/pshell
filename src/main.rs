@@ -15,9 +15,15 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 mod pshell;
-mod lex;
+mod parser;
 
 fn main() {
+
+	/* check target system */
+	if !(cfg!(target_os = "linux") || cfg!(target_os = "unix")) {
+		panic!("pshell system error: your OS isn't supported");
+	}
+
 	/* print shell startup message */
 	println!("Hello, World!");
 
@@ -50,11 +56,15 @@ fn main() {
 
 				/* parse input line and divide into tokens */
 
-				let tokens: Vec<String> = lex::parse(line);
+				let tokens: Vec<String> = parser::tokenize_input(line);
+				// DEBUG
+				for x in &tokens {
+					println!("{}", x);
+				}
 
 				/* parse input and build command table */
 
-				let cmd_table: pshell::Command = pshell::parse(tokens);
+				let cmd_table: pshell::Command = parser::parse_input(tokens);
 
 				/* execute command(s) */
 
@@ -63,7 +73,7 @@ fn main() {
 			/* ctrl-C */
 			Err(ReadlineError::Interrupted) => {
 				// continue;
-				break;
+				break; // DEBUG: this should be continue
 			},
 			/* exit gracefully on end-of-file */
 			Err(ReadlineError::Eof) => {
