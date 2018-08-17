@@ -133,18 +133,21 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 		}
 	}
 	
-	// DEBUG
-	println!("TOKENS:");
-	for x in &tokens {
-		println!("{}", x);
-	}
-
 	/* iterate over simple commands and build command table */
-	while let Some(curr) = tokens.pop() {
-		if curr.trim() == "|" || tokens.len() == 0 {
-
+	let mut simple_command:SimpleCommand = SimpleCommand::new();
+	for x in &tokens {
+		if x.trim() == "|" {
+			cmd_table.simple_commands.push(simple_command);
+			simple_command = SimpleCommand::new();
+			continue;
 		}
+		simple_command.args.push(x.to_string());
 	}
+	if simple_command.args.len() > 0{
+		cmd_table.simple_commands.push(simple_command);
+	}
+	
+	/* TODO: expand environment variables and '~' */
 
 	return cmd_table;
 }
