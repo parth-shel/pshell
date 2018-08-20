@@ -8,8 +8,6 @@ extern crate libc;
 extern crate rustyline;
 extern crate hostname;
 
-use std::io;
-use std::io::Write;
 use std::env;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
@@ -29,7 +27,9 @@ fn main() {
 
 	/* RustyLine line editor */
 	let mut rl = Editor::<()>::new();
-	rl.load_history(".pshell_history");
+	if rl.load_history(".pshell_history").is_err() {
+		println!("pshell history error");
+	}
 
 	/* continually prompt the user, read input and execute command(s) */
 	loop {
@@ -114,21 +114,19 @@ fn print_prompt() {
 	let esc = String::from_utf8(esc_char).unwrap();
 	let reset: u8 = 0;
 	let bright: u8 = 1;
-	let black: u8 = 30;
 	let red: u8 = 31;
 	let green: u8 = 32;
-	let yellow: u8 = 33;
 	let blue: u8 = 34;
-	let magenta: u8 = 35;
+	let yellow: u8 = 33;
 	let cyan: u8 = 36;
 
-	let mut user_name = String::new();
+	let user_name;
 	match env::var("USER") {
 		Ok(val) => user_name = String::from(val),
-			Err(err) => panic!("couldn't get env var! {}", err),
+		Err(err) => panic!("couldn't get env var! {}", err),
 	}
 
-	let mut host_name = hostname::get_hostname().unwrap();
+	let host_name = hostname::get_hostname().unwrap();
 
 	let curr_dir = env::current_dir().unwrap();
 

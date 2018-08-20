@@ -49,7 +49,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 	let mut o_redirect_found: bool = false;
 	let mut e_redirect_found: bool = false;
 
-	for i in 0..3 {
+	for _i in 0..3 {
 		/* check last-but-1 token */
 		if tokens.len() >= 3 && (match tokens[tokens.len() - 2].trim() {
 			"<" => true,
