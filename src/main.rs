@@ -35,7 +35,7 @@ fn main() {
 	loop {
 		/* display prompt */
 
-		let istty = unsafe { libc::isatty(libc::STDOUT_FILENO as i32) } != 0;
+		let istty = unsafe { libc::isatty(libc::STDOUT_FILENO) } != 0;
 		if istty {
 			print_prompt();
 		}

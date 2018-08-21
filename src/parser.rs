@@ -149,5 +149,9 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 	
 	/* TODO: expand environment variables and '~' */
 
+	/* TODO: implement wildcards '*' */
+
+	/* TODO: handle subshell '`...`' */
+
 	return cmd_table;
 }
