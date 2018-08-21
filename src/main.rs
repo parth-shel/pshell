@@ -61,10 +61,10 @@ fn main() {
 					continue;
 				}
 				// DEBUG
-				println!("TOKENS:");
+				/*println!("TOKENS:");
 				for x in &tokens {
 					println!("{}", x);
-				}
+				}*/
 
 				/* parse input and build command table */
 
@@ -73,7 +73,7 @@ fn main() {
 					continue;
 				}*/
 				// DEBUG
-				println!("COMMAND TABLE:");
+				/*println!("COMMAND TABLE:");
 				println!("Simple Commands:");
 				for _sc in &cmd_table.simple_commands {
 					println!("Arguments:");
@@ -85,7 +85,7 @@ fn main() {
 				println!("Output File: {}", cmd_table.out_file);
 				println!("Error File: {}", cmd_table.err_file);
 				println!("Append: {:?}", cmd_table.append);
-				println!("Background: {:?}", cmd_table.background);
+				println!("Background: {:?}", cmd_table.background);*/
 
 				/* execute command(s) */
 
@@ -93,8 +93,7 @@ fn main() {
 			}
 			/* ctrl-C */
 			Err(ReadlineError::Interrupted) => {
-				// continue;
-				break; // DEBUG: this should be continue
+				continue;
 			},
 			/* exit gracefully on end-of-file */
 			Err(ReadlineError::Eof) => {
