@@ -9,6 +9,7 @@ extern crate rustyline;
 extern crate hostname;
 
 use std::env;
+use std::process;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -19,7 +20,8 @@ fn main() {
 
 	/* check target system */
 	if !(cfg!(target_os = "linux") || cfg!(target_os = "unix")) {
-		panic!("pshell system error: your OS isn't supported");
+		eprint!("pshell system error: your OS isn't supported");
+		process::exit(1);
 	}
 
 	/* print shell startup message */
