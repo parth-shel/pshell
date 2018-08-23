@@ -121,14 +121,8 @@ fn print_prompt() {
 	let yellow: u8 = 33;
 	let cyan: u8 = 36;
 
-	let user_name;
-	match env::var("USER") {
-		Ok(val) => user_name = String::from(val),
-		Err(err) => panic!("couldn't get env var! {}", err),
-	}
-
+	let user_name = env::var("USER").unwrap();
 	let host_name = hostname::get_hostname().unwrap();
-
 	let curr_dir = env::current_dir().unwrap();
 
 	println!("{}[{};{}m{}{}[{}m@{}[{};{}m{}{}[{}m{}[{};{}m | {}[{}m{}[{};{}m{}{}[{}m{}[{};{}m $pshell ↴ {}[{}m",

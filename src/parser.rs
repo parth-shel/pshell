@@ -137,9 +137,20 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 	let mut simple_command:SimpleCommand = SimpleCommand::new();
 	for x in &tokens {
 		if x.trim() == "|" {
+			cmd_table.piped = true;
 			cmd_table.simple_commands.push(simple_command);
 			simple_command = SimpleCommand::new();
 			continue;
+		} else if x.trim() == "&&" {
+			if cmd_table.piped {
+				println!("pshell parse error");
+				let mut empty_cmd_table:Command = Command::new();
+				return empty_cmd_table;
+			} else {
+				cmd_table.simple_commands.push(simple_command);
+				simple_command = SimpleCommand::new();
+				continue;	
+			}
 		}
 		simple_command.args.push(x.to_string());
 	}
