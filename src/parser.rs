@@ -1,6 +1,6 @@
 extern crate commands;
 
-use pshell::Command;
+use pshell::ComplexCommand;
 use pshell::SimpleCommand;
 use parser::commands::tokenizer::{tokenize, TokenType};
 
@@ -35,8 +35,8 @@ pub fn tokenize_input(input: String) -> Vec<String> {
 }
 
 /* parse - build command table from the tokens */
-pub fn parse_input(mut tokens: Vec<String>) -> Command {
-	let mut cmd_table:Command = Command::new();
+pub fn parse_input(mut tokens: Vec<String>) -> ComplexCommand {
+	let mut cmd_table:ComplexCommand = ComplexCommand::new();
 
 	/* if last token is '&', set background */
 	if tokens.len() > 0 && tokens[tokens.len() - 1] == "&" {
@@ -65,7 +65,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					"<" => { // input redirection
 						if i_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						i_redirect_found = true;
@@ -73,7 +73,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					}, "2>" => { // error redirection
 						if e_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						e_redirect_found = true;
@@ -81,7 +81,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					}, "1>" => { // output redirection
 						if o_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						o_redirect_found = true;
@@ -89,7 +89,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					}, ">" => { // output redirection
 						if o_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						o_redirect_found = true;
@@ -97,7 +97,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					}, ">&" => { // output & error redirection
 						if o_redirect_found || e_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						o_redirect_found = true;
@@ -107,7 +107,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					}, ">>" => { // output redirection (append mode)
 						if o_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						o_redirect_found = true;
@@ -116,7 +116,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 					}, ">>&" => { // output & error redirection (append mode)
 						if o_redirect_found || e_redirect_found {
 							println!("pshell parse error");
-							let mut empty_cmd_table:Command = Command::new();
+							let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 							return empty_cmd_table;
 						}
 						o_redirect_found = true;
@@ -137,20 +137,25 @@ pub fn parse_input(mut tokens: Vec<String>) -> Command {
 	let mut simple_command:SimpleCommand = SimpleCommand::new();
 	for x in &tokens {
 		if x.trim() == "|" {
+			if cmd_table.logical {
+				println!("pshell parse error");
+				let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
+				return empty_cmd_table;
+			}
 			cmd_table.piped = true;
 			cmd_table.simple_commands.push(simple_command);
 			simple_command = SimpleCommand::new();
 			continue;
-		} else if x.trim() == "&&" {
+		} else if x.trim() == ";" || x.trim() == "&&" || x.trim() == "||" {
 			if cmd_table.piped {
 				println!("pshell parse error");
-				let mut empty_cmd_table:Command = Command::new();
+				let mut empty_cmd_table:ComplexCommand = ComplexCommand::new();
 				return empty_cmd_table;
-			} else {
-				cmd_table.simple_commands.push(simple_command);
-				simple_command = SimpleCommand::new();
-				continue;	
 			}
+			cmd_table.logical = true;
+			simple_command.args.push(x.to_string());
+			cmd_table.simple_commands.push(simple_command);
+			simple_command = SimpleCommand::new();
 		}
 		simple_command.args.push(x.to_string());
 	}

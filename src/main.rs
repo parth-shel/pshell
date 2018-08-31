@@ -7,6 +7,7 @@
 extern crate libc;
 extern crate rustyline;
 extern crate hostname;
+extern crate nix;
 
 use std::env;
 use std::process;
@@ -70,10 +71,10 @@ fn main() {
 
 				/* parse input and build command table */
 
-				let cmd_table: pshell::Command = parser::parse_input(tokens);
-				/*if cmd_table.simple_commands.is_empty() {
+				let cmd_table: pshell::ComplexCommand = parser::parse_input(tokens);
+				if cmd_table.simple_commands.is_empty() {
 					continue;
-				}*/
+				}
 				// DEBUG
 				/*println!("COMMAND TABLE:");
 				println!("Simple Commands:");
