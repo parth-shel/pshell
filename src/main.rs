@@ -30,6 +30,7 @@ fn main() {
 
 	/* RustyLine line editor */
 	let mut rl = Editor::<()>::new();
+
 	if rl.load_history(".pshell_history").is_err() {
 		println!("pshell history error");
 	}
