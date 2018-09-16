@@ -12,3 +12,6 @@
 
 /target
 **/*.rs.bk
+
+# pshell history
+.pshell_history

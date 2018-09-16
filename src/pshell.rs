@@ -8,6 +8,8 @@ use std::os::unix::io::{FromRawFd, AsRawFd};
 use std::os::unix::process::CommandExt;
 use nix::sys::signal;
 use nix::unistd::pipe;
+use std::env;
+use std::path::Path;
 // use libc;
 
 extern "C" fn handle_sigchld(_: i32) {
@@ -92,120 +94,77 @@ pub fn exec(cmd_table: ComplexCommand) {
 	}
 	/* it's a simple command */ 
 	else {
-		let sig_action = signal::SigAction::new(
-        	signal::SigHandler::Handler(handle_sigchld),
-        	signal::SaFlags::empty(),
-        	signal::SigSet::empty(),
-    	);
-		unsafe {
-        	match signal::sigaction(signal::SIGCHLD, &sig_action) {
-            	Ok(_) => {}
-            	Err(e) => println!("sigaction error: {:?}", e),
-        	}
-    	}
-		for i in 0..cmd_table.simple_commands.len() {
-			/* check for built-ins */
-			if built_in(cmd_table.simple_commands[i].args.clone()) {
-				continue;
-			}
-
-			let mut _in = 0;
-			let mut _out = 1;
-			let mut _err = 2;
-
-			/* redirect I/O as specified */
-			if !cmd_table.in_file.is_empty() {
-				_in = OpenOptions::new().read(true).open(cmd_table.in_file.clone()).unwrap().as_raw_fd();
-			} else {
-				_in = std::io::stdin().as_raw_fd();
-			}
-			if !cmd_table.out_file.is_empty() {
-				if cmd_table.append {
-					_out = OpenOptions::new().write(true).append(true).create(true).open(cmd_table.out_file.clone()).unwrap().as_raw_fd();
-				} else {
-					_out = OpenOptions::new().write(true).truncate(true).create(true).open(cmd_table.out_file.clone()).unwrap().as_raw_fd();
-				}
-			} else {
-				_out = std::io::stdout().as_raw_fd();
-			}
-			if !cmd_table.err_file.is_empty() {
-				if cmd_table.append {
-					_err = OpenOptions::new().write(true).append(true).create(true).open(cmd_table.err_file.clone()).unwrap().as_raw_fd();
-				} else {
-					_err = OpenOptions::new().write(true).truncate(true).create(true).open(cmd_table.err_file.clone()).unwrap().as_raw_fd();
-				}
-			} else {
-				_err = std::io::stderr().as_raw_fd();
-			}
-
-			/* spawn new process for each command */
-			let mut child = Command::new(&cmd_table.simple_commands[i].args[0])
-										.args(&cmd_table.simple_commands[i].args[1.. ])
-										.stdin(unsafe { Stdio::from_raw_fd(_in) })
-										.stdout(unsafe { Stdio::from_raw_fd(_out) })
-										.stderr(unsafe { Stdio::from_raw_fd(_err) })
-										.spawn().expect("pshell failed to execute command");
-
-			/* wait for child running in background */
-			if !cmd_table.background {
-				let ecode = child.wait().expect("pshell failed to wait on child");
-				/* TODO: set environment variable for return code of process */
-			} else {
-				let pid = child.id();
-				/* TODO: set environment variable for PID of backgrounded process */
-			}
-		}
+		run(cmd_table);
 	}
 	
 	return;
 }
 
 fn run(cmd_table: ComplexCommand) {
-	/*for i in 0..cmd_table.simple_commands.len() {
+	let sig_action = signal::SigAction::new(
+        	signal::SigHandler::Handler(handle_sigchld),
+        	signal::SaFlags::empty(),
+        	signal::SigSet::empty(),
+    	);
+	unsafe {
+        match signal::sigaction(signal::SIGCHLD, &sig_action) {
+            Ok(_) => {}
+            Err(e) => println!("sigaction error: {:?}", e),
+        }
+    }
+	for i in 0..cmd_table.simple_commands.len() {
 		/* check for built-ins */
-		if built_in(cmd_table.simple_commands[i].args) {
+		if built_in(cmd_table.simple_commands[i].args.clone()) {
 			continue;
 		}
-		/* spawn new process for each command */
-		let mut child = Command::new(cmd_table.simple_commands[i].args[0]).args(&cmd_table.simple_commands[i].args[1.. ]);
+
+		let mut _in = 0;
+		let mut _out = 1;
+		let mut _err = 2;
 
 		/* redirect I/O as specified */
 		if !cmd_table.in_file.is_empty() {
-			child.stdin(OpenOptions::new().read(true).open(cmd_table.in_file.clone()).unwrap());
+			_in = OpenOptions::new().read(true).open(cmd_table.in_file.clone()).unwrap().as_raw_fd();
 		} else {
-			child.stdin(unsafe { Stdio::from_raw_fd(std::io::stdin().as_raw_fd()) });
+			_in = std::io::stdin().as_raw_fd();
 		}
-		/*if !cmd_table.out_file.is_empty() {
+		if !cmd_table.out_file.is_empty() {
 			if cmd_table.append {
-				child.stdout(OpenOptions::new().write(true).append(true).create(true).open(cmd_table.out_file).as_raw_fd());
+				_out = OpenOptions::new().write(true).append(true).create(true).open(cmd_table.out_file.clone()).unwrap().as_raw_fd();
 			} else {
-				child.stdout(OpenOptions::new().write(true).truncate(true).create(true).open(cmd_table.out_file).as_raw_fd());
+				_out = OpenOptions::new().write(true).truncate(true).create(true).open(cmd_table.out_file.clone()).unwrap().as_raw_fd();
 			}
 		} else {
-			child.stdin(std::io::Stdout);
+			_out = std::io::stdout().as_raw_fd();
 		}
 		if !cmd_table.err_file.is_empty() {
 			if cmd_table.append {
-				child.stderr(Stdio::from_raw_fd(OpenOptions::new().write(true).append(true).create(true).open(cmd_table.err_file).as_raw_fd()));
+				_err = OpenOptions::new().write(true).append(true).create(true).open(cmd_table.err_file.clone()).unwrap().as_raw_fd();
 			} else {
-				child.stderr(Stdio::from_raw_fd(OpenOptions::new().write(true).truncate(true).create(true).open(cmd_table.err_file).as_raw_fd()));
+				_err = OpenOptions::new().write(true).truncate(true).create(true).open(cmd_table.err_file.clone()).unwrap().as_raw_fd();
 			}
 		} else {
-			child.stderr(std::io::Stderr);
-		}*/
+			_err = std::io::stderr().as_raw_fd();
+		}
 
-		child.spawn().expect("pshell failed to execute command");
+		/* spawn new process for each command */
+		let mut child = Command::new(&cmd_table.simple_commands[i].args[0])
+									.args(&cmd_table.simple_commands[i].args[1.. ])
+									.stdin(unsafe { Stdio::from_raw_fd(_in) })
+									.stdout(unsafe { Stdio::from_raw_fd(_out) })
+									.stderr(unsafe { Stdio::from_raw_fd(_err) })
+									.spawn().expect("pshell failed to execute command");
 
 		/* wait for child running in background */
-		//if !cmd_table.background {
-		//	let ecode = child.wait().expect("pshell failed to wait on child");
+		if !cmd_table.background {
+			let ecode = child.wait().expect("pshell failed to wait on child");
 			/* TODO: set environment variable for return code of process */
-		//} else {
-		//	let pid = child.id();
+		} else {
+			let pid = child.id();
 			/* TODO: set environment variable for PID of backgrounded process */
-		//}
+		}
 	}
-	return;*/
+	return;
 }
 
 fn run_proc(args: Vec<String>, cmd_table: ComplexCommand) -> i32 {
@@ -234,16 +193,42 @@ fn built_in(args: Vec<String>) -> bool {
 
 			// return true;
 		}, "cd" => {
-			/* TODO */
+			if args.len() == 1 {
+				match env::home_dir() {
+					Some(path) => env::set_current_dir(path).unwrap(),
+					None => println!("pshell failed to get home dir"),
+				}
+			}
+			else {
+				let dir = Path::new(&args[1]);
+				env::set_current_dir(dir).unwrap();
+			}
 			return true;
 		}, "setenv" => {
-			/* TODO */
+			if args.len() >= 3 {
+				let key = &args[1];
+				let value = &args[2];
+				env::set_var(key, value);
+			}
 			return true;
 		}, "unsetenv" => {
-			/* TODO */
+			if args.len() >= 2 {
+				let key = &args[1];
+				env::remove_var(key);
+			}
 			return true;
 		}, "printenv" => {
-			/* TODO */
+			if args.len() >= 2 {
+				let key = &args[1];
+				match env::var(key) {
+				    Ok(value) => println!("{}: {:?}", key, value),
+				    Err(e) => println!("couldn't interpret {}: {}", key, e),
+				}
+			} else {
+				for (key, value) in env::vars() {
+    				println!("{}: {:?}", key, value);
+				}
+			}
 			return true;
 		}, "source" => {
 			/* TODO */
