@@ -13,10 +13,6 @@ use std::path::Path;
 // use libc;
 
 extern "C" fn handle_sigchld(_: i32) {
-    // When handle waitpid here & for commands like `ls | cmd-not-exist`
-    // will panic: "wait() should either return Ok or panic"
-    // which I currently don't know how to fix.
-
     unsafe {
         let mut stat: i32 = 0;
         let ptr: *mut i32 = &mut stat;
@@ -195,13 +191,20 @@ fn built_in(args: Vec<String>) -> bool {
 		}, "cd" => {
 			if args.len() == 1 {
 				match env::home_dir() {
-					Some(path) => env::set_current_dir(path).unwrap(),
+					Some(path) => {
+						match env::set_current_dir(path) {
+							Ok(_) => return true,
+							Err(err) => println!("pshell cd error: {:?}", err),
+						}
+					},
 					None => println!("pshell failed to get home dir"),
 				}
-			}
-			else {
+			} else {
 				let dir = Path::new(&args[1]);
-				env::set_current_dir(dir).unwrap();
+				match env::set_current_dir(dir) {
+					Ok(_) => return true,
+					Err(err) => println!("pshell cd error: {:?}", err),
+				}
 			}
 			return true;
 		}, "setenv" => {
