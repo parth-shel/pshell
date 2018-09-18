@@ -159,7 +159,7 @@ pub fn parse_input(mut tokens: Vec<String>) -> ComplexCommand {
 		}
 		simple_command.args.push(x.to_string());
 	}
-	if simple_command.args.len() > 0{
+	if simple_command.args.len() > 0 {
 		cmd_table.simple_commands.push(simple_command);
 	}
 	
@@ -168,6 +168,12 @@ pub fn parse_input(mut tokens: Vec<String>) -> ComplexCommand {
 	/* TODO: implement wildcards '*' */
 
 	/* TODO: handle subshell '`...`' */
+
+	for _sc in &cmd_table.simple_commands {
+		for _arg in &_sc.args {
+			
+		}	
+	}
 
 	return cmd_table;
 }
