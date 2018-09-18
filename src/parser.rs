@@ -3,6 +3,8 @@ extern crate commands;
 use pshell::ComplexCommand;
 use pshell::SimpleCommand;
 use parser::commands::tokenizer::{tokenize, TokenType};
+use glob::glob;
+use std::env;
 
 /* tokenize - tokenize the input string based on whitespace chars and handle " & \ */
 pub fn tokenize_input(input: String) -> Vec<String> {
@@ -157,23 +159,51 @@ pub fn parse_input(mut tokens: Vec<String>) -> ComplexCommand {
 			cmd_table.simple_commands.push(simple_command);
 			simple_command = SimpleCommand::new();
 		}
-		simple_command.args.push(x.to_string());
+		/* expand token if necessary */
+		let mut expanded = expand_if_necessary(x.to_string());
+		for t in &expanded {
+			simple_command.args.push(t.to_string());	
+		}
 	}
 	if simple_command.args.len() > 0 {
 		cmd_table.simple_commands.push(simple_command);
 	}
-	
-	/* TODO: expand environment variables and '~' */
-
-	/* TODO: implement wildcards '*' */
-
-	/* TODO: handle subshell '`...`' */
-
-	for _sc in &cmd_table.simple_commands {
-		for _arg in &_sc.args {
-			
-		}	
-	}
 
 	return cmd_table;
+}
+
+pub fn expand_if_necessary(token: String) -> Vec<String> {
+
+	let mut token_vec:Vec<char> = token.chars().collect();
+
+	let mut tokens:Vec<String> = Vec::new();
+
+	/* expand environment variables */
+	if token_vec.len() > 3 && token_vec[0] == '$' && token_vec[1] == '{' && token_vec[token_vec.len() - 1] == '}' {
+		token_vec.remove(0); token_vec.remove(0); token_vec.pop();
+		let key: String = token_vec.into_iter().collect();
+		match env::var_os(key) {
+    		Some(val) => tokens.push(val.into_string().ok().unwrap()),
+    		None => println!("pshell environment var error")
+		}
+		return tokens;
+	}
+	/* wildcards '*' and '~' expansion */
+	else if token.contains("*") || token.contains("~") {
+		for entry in glob(&token.to_string()).expect("pshell failed to read glob pattern") {
+    		match entry {
+        		Ok(path) => tokens.push(path.display().to_string()),
+        		Err(e) => println!("pshell glob error: {:?}", e),
+    		}
+		}
+		return tokens;
+	}
+	/* TODO: handle subshell '`...`' */
+	else if token_vec.len() > 2 && token_vec[0] == '`' && token_vec[token_vec.len() - 1] == '`' {
+		return tokens;
+	}
+	else {
+		tokens.push(token);
+		return tokens;
+	}
 }

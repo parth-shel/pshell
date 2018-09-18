@@ -8,6 +8,7 @@ extern crate libc;
 extern crate rustyline;
 extern crate hostname;
 extern crate nix;
+extern crate glob;
 
 use std::env;
 use std::process;
@@ -24,6 +25,13 @@ fn main() {
 		eprint!("pshell system error: your OS isn't supported");
 		process::exit(1);
 	}
+
+	/* set environment vars */
+	match env::current_exe() {
+    	Ok(exe_path) => env::set_var("SHELL", exe_path.to_str().unwrap()),
+    	Err(e) => println!("pshell failed to get current exe path: {}", e),
+	}
+	env::set_var("$", process::id().to_string());
 
 	/* print shell startup message */
 	println!("Hello, World!");
