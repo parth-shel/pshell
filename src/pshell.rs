@@ -143,13 +143,32 @@ fn run(cmd_table: ComplexCommand) {
 			_err = std::io::stderr().as_raw_fd();
 		}
 
+		let initial_in = unsafe { libc::dup(0) };
+		let initial_out = unsafe { libc::dup(1) };
+		let initial_err = unsafe { libc::dup(2) };
+
+		unsafe { libc::dup2(_in, libc::STDIN_FILENO) };
+		unsafe { libc::dup2(_out, libc::STDOUT_FILENO) };
+		unsafe { libc::dup2(_err, libc::STDERR_FILENO) };
+
 		/* spawn new process for each command */
 		let mut child = Command::new(&cmd_table.simple_commands[i].args[0])
 									.args(&cmd_table.simple_commands[i].args[1.. ])
-									.stdin(unsafe { Stdio::from_raw_fd(_in) })
+									/*.stdin(unsafe { Stdio::from_raw_fd(_in) })
 									.stdout(unsafe { Stdio::from_raw_fd(_out) })
-									.stderr(unsafe { Stdio::from_raw_fd(_err) })
+									.stderr(unsafe { Stdio::from_raw_fd(_err) })*/
+									.stdin(Stdio::inherit())
+									.stdout(Stdio::inherit())
+									.stderr(Stdio::inherit())
 									.spawn().expect("pshell failed to execute command");
+
+		unsafe { libc::dup2(initial_in, 0) };
+		unsafe { libc::dup2(initial_out, 1) };
+		unsafe { libc::dup2(initial_err, 2) };
+
+		unsafe { libc::close(initial_in) };
+		unsafe { libc::close(initial_out) };
+		unsafe { libc::close(initial_err) };
 
 		/* wait for child running in background */
 		if !cmd_table.background {
